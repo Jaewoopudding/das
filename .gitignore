@@ -1,0 +1,13 @@
+logs
+wandb
+__pycache__/
+
+extension
+
+*.pyc
+*.pyo
+*.pyd
+*.vsix
+*.pth
+*.tar
+*.egg-info
