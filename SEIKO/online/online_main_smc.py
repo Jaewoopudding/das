@@ -30,7 +30,7 @@ from absl import app, flags
 from ml_collections import config_flags
 import time
 
-from online.model_utils import jpeg_compressibility, online_jpeg_loss_fn, generate_embeds_fn, evaluate_loss_fn, evaluate, prepare_pipeline, generate_new_x, generate_new_x_smc, online_aesthetic_loss_fn
+from online.model_utils import jpeg_compressibility, online_jpeg_loss_fn, generate_embeds_fn, evaluate_loss_fn, evaluate, generate_new_x, generate_new_x_smc, online_aesthetic_loss_fn
 from online.dataset import D_explored
 
 FLAGS = flags.FLAGS
@@ -91,8 +91,31 @@ def main(_):
     # freeze parameters of models to save more memory
     inference_dtype = torch.float32
 
-    unet_list, Unet2d_models = prepare_pipeline(pipeline, accelerator, config, inference_dtype)
-    del unet_list, Unet2d_models
+    pipeline.vae.requires_grad_(False)
+    pipeline.text_encoder.requires_grad_(False)
+    pipeline.unet.requires_grad_(False)
+
+    # disable safety checker
+    pipeline.safety_checker = None    
+
+    # make the progress bar nicer
+    pipeline.set_progress_bar_config(
+        position=1,
+        disable=not accelerator.is_local_main_process,
+        leave=False,
+        desc="Timestep",
+        dynamic_ncols=True,
+    )    
+
+    # switch to DDIM scheduler
+    pipeline.scheduler = DDIMScheduler.from_config(pipeline.scheduler.config)
+    pipeline.scheduler.set_timesteps(config.steps)
+  
+    # Move unet, vae and text_encoder to device and cast to inference_dtype
+    pipeline.vae.to(accelerator.device, dtype=inference_dtype)
+    pipeline.text_encoder.to(accelerator.device, dtype=inference_dtype)
+
+    pipeline.unet.to(accelerator.device, dtype=inference_dtype)
 
     pipeline.scheduler.alphas_cumprod = pipeline.scheduler.alphas_cumprod.to(accelerator.device)
     

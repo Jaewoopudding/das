@@ -67,7 +67,6 @@ Online black-box optimization experiments can be conducted in SEIKO folder which
 
 ```bash
 cd SEIKO
-pip install diffusers==0.17.1
 
 CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --config config/UCB_smc.py:aesthetic
 CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --config config/Bootstrap_smc.py:aesthetic
@@ -80,11 +79,6 @@ The above codes save trained surrogate reward models. To generate samples using 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --config config/UCB_smc.py:evaluate
 CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --config config/Bootstrap_smc.py:evaluate
-```
-
-Note that these expreiments use different diffusers version. To conduct other expereiments, reinstall:
-```bash
-pip install diffusers==0.31.0
 ```
 
 ## Toy Examples
