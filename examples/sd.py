@@ -13,7 +13,7 @@ num_particles = 4
 batch_p = 2
 tempering_gamma = 0.008
 
-prompt = "A cat in the style of Van Gogh’s Starry Night"
+prompt = "cat and a dog"
 repeated_prompts = [prompt] * batch_p
 
 # reward_fn = rewards.aesthetic_score(device = 'cuda')
