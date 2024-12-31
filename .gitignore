@@ -8,6 +8,5 @@ extension
 *.pyo
 *.pyd
 *.vsix
-*.pth
 *.tar
 *.egg-info
