@@ -1,6 +1,3 @@
-# Copied from https://github.com/blt2114/twisted_diffusion_sampler/blob/main/smc_utils/smc_utils.py
-# SSP resampling is copied from https://github.com/nchopin/particles/blob/master/particles/resampling.py
-
 import torch as th
 
 def compute_ess(w, dim=-1):

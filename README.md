@@ -1,6 +1,14 @@
 # DAS (Diffusion Alignment as Sampling)
 
-This project implements Diffusion Alignment as Sampling (DAS)
+This is the official implementation of our paper [Alignment without Over-optimization: Training-Free Solution for Diffusion Models](https://arxiv.org/abs/2501.05803)
+
+by [Sunwoo Kim](https://www.linkedin.com/in/sunwoo-kim-299493201/)<sup>1</sup>, [Minkyu Kim](https://scholar.google.com/citations?user=f-kVmJwAAAAJ&hl=ko)<sup>2</sup>, [Dongmin Park](https://scholar.google.com/citations?user=4xXYQl0AAAAJ&hl=ko)<sup>2</sup>.
+
+<sup>1</sup> Seoul National University, <sup>2</sup> [KRAFTON AI](https://www.krafton.ai/en/research/publications/)
+
+## Abstract
+
+Diffusion models excel in generative tasks, but aligning them with specific objectives while maintaining their versatility remains challenging. Existing fine-tuning methods often suffer from reward over-optimization, while approximate guidance approaches fail to optimize target rewards effectively. Addressing these limitations, we propose a training-free sampling method based on Sequential Monte Carlo (SMC) to sample from the reward-aligned target distribution. Our approach, tailored for diffusion sampling and incorporating tempering techniques, achieves comparable or superior target rewards to fine-tuning methods while preserving diversity and cross-reward generalization. We demonstrate its effectiveness in single-reward optimization, multi-objective scenarios, and online black-box optimization. This work offers a robust solution for aligning diffusion models with diverse downstream objectives without compromising their general capabilities.
 
 ## Installation
 
@@ -75,7 +83,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --confi
 CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --config config/Bootstrap_smc.py:jpeg
 ```
 
-The above codes save trained surrogate reward models. To generate samples using the surrogate reward, change config.reward_model_path and run:
+The above codes save trained surrogate reward models. To generate samples, change config.reward_model_path to the final surrogate model checkpoint and run:
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --config config/UCB_smc.py:evaluate
 CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --config config/Bootstrap_smc.py:evaluate
@@ -84,6 +92,11 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch online/online_main_smc.py --confi
 ## Toy Examples
 
 The Mixture of Gaussians ans Swiss roll experiments can be reproduced using Jupyter notebooks in the notebooks folder.
+
+## Citation
+```
+
+```
 
 ## Acknowledgments
 
