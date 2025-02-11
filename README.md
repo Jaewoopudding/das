@@ -1,6 +1,6 @@
 # DAS (Diffusion Alignment as Sampling)
 
-This is the official implementation of our paper [Alignment without Over-optimization: Training-Free Solution for Diffusion Models](https://arxiv.org/abs/2501.05803)
+This is the official implementation of our paper [Test-time Alignment of Diffusion Models without Reward Over-optimization](https://arxiv.org/abs/2501.05803)
 
 by [Sunwoo Kim](https://www.linkedin.com/in/sunwoo-kim-299493201/)<sup>1</sup>, [Minkyu Kim](https://scholar.google.com/citations?user=f-kVmJwAAAAJ&hl=ko)<sup>2</sup>, [Dongmin Park](https://scholar.google.com/citations?user=4xXYQl0AAAAJ&hl=ko)<sup>2</sup>.
 
@@ -16,6 +16,7 @@ Diffusion models excel in generative tasks, but aligning them with specific obje
 conda create -n das python=3.10
 conda activate das
 pip install -e .
+pip install --no-deps image-reward
 ```
 
 Install hpsv2 from [HPSv2](https://github.com/tgxs002/HPSv2). Recommend using method 2 (installing locally) to avoid errors.
@@ -96,7 +97,7 @@ The Mixture of Gaussians ans Swiss roll experiments can be reproduced using Jupy
 ## Citation
 ```
 @article{kim2025das,
-    title={Alignment without Over-optimization: Training-Free Solution for Diffusion Models}, 
+    title={Test-time Alignment of Diffusion Models without Reward Over-optimization}, 
     author={Sunwoo Kim and Minkyu Kim and Dongmin Park},
     journal={arXiv preprint arXiv:2501.05803},
     year={2025},
