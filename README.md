@@ -1,4 +1,4 @@
-# DAS (Diffusion Alignment as Sampling)
+# DAS (Diffusion Alignment as Sampling), ICLR'25 Spotlight
 
 This is the official implementation of our paper [Test-time Alignment of Diffusion Models without Reward Over-optimization](https://arxiv.org/abs/2501.05803)
 
