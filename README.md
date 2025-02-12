@@ -97,8 +97,8 @@ The Mixture of Gaussians ans Swiss roll experiments can be reproduced using Jupy
 ## Citation
 ```
 @inproceedings{
-    kim2025alignment,
-    title={Alignment without Over-optimization: Training-Free Solution for Diffusion Models},
+    kim2025testtime,
+    title={Test-time Alignment of Diffusion Models without Reward Over-optimization},
     author={Sunwoo Kim and Minkyu Kim and Dongmin Park},
     booktitle={The Thirteenth International Conference on Learning Representations},
     year={2025},
