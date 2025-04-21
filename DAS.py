@@ -12,7 +12,7 @@ from accelerate.logging import get_logger
 from diffusers import StableDiffusionPipeline, DDIMScheduler, UNet2DConditionModel
 from diffusers.loaders import AttnProcsLayers
 from diffusers.models.attention_processor import LoRAAttnProcessor
-from das.diffusers_patch.pipeline_using_SMC import pipeline_using_smc
+from das.diffusers_patch.pipeline_using_SMC import pipeline_using_smc, pipeline_with_logprob
 from das.diffusers_patch.pipeline_using_SMC_SDXL import pipeline_using_smc_sdxl
 from das.diffusers_patch.pipeline_using_SMC_LCM import pipeline_using_smc_lcm
 import numpy as np
@@ -41,6 +41,9 @@ class DAS(DiffusionModelSampler):
         else:
             print("Using SD")
             self.pipeline_using_smc = pipeline_using_smc
+            self.eval_images_pipeline = pipeline_with_logprob
+        self.negative_log_dir = f"logs/{self.config.project_name}/{self.config.reward_fn}/{self.config.run_name}/eval_neg"
+        os.makedirs(self.negative_log_dir, exist_ok=True)
 
     def sample_images(self, train=False):
         """Sample images using the diffusion model."""
@@ -113,6 +116,18 @@ class DAS(DiffusionModelSampler):
                         kl_coeff=self.config.smc.kl_coeff,
                         verbose=self.config.smc.verbose
                     )
+                    
+                    negative_images, _, _, _ = pipeline_with_logprob(
+                        self.pipeline,
+                        prompt=list(prompts_batch),
+                        num_inference_steps=self.config.sample.num_steps,
+                        guidance_scale=self.config.sample.guidance_scale,
+                        negative_prompt=[""]*len(prompts_batch),
+                        eta=self.config.sample.eta,
+                        output_type="pt",
+                    )
+                    
+                    
                 self.info_eval_vis["eval_ess"].append(ess_trace)
                 self.info_eval_vis["scale_factor_trace"].append(scale_factor_trace)
                 self.info_eval_vis["rewards_trace"].append(rewards_trace)
@@ -120,13 +135,73 @@ class DAS(DiffusionModelSampler):
                 self.info_eval_vis["log_prob_diffusion_trace"].append(log_prob_diffusion_trace)
 
                 rewards = self.reward_fn(images, prompts_batch)
+                negative_sample_rewards = self.reward_fn(negative_images, prompts_batch)
                 
                 self.info_eval_vis["eval_rewards_img"].append(rewards.clone().detach())
+                self.info_eval_vis["eval_negative_rewards_img"].append(negative_sample_rewards.clone().detach())
                 self.info_eval_vis["eval_image"].append(images.clone().detach())
                 self.info_eval_vis["eval_prompts"] = list(self.info_eval_vis["eval_prompts"]) + list(prompts_batch)
+                self.info_eval_vis["eval_negative_image"].append(negative_images.clone().detach())
 
     def log_evaluation(self, epoch=None, inner_epoch=None):
-        super().log_evaluation(epoch=None, inner_epoch=None)
+        self.info_eval = {k: torch.mean(torch.stack(v)) for k, v in self.info_eval.items()}
+        self.info_eval = self.accelerator.reduce(self.info_eval, reduction="mean")
+
+        ims = torch.cat(self.info_eval_vis["eval_image"])
+        negative_ims = torch.cat(self.info_eval_vis["eval_negative_image"])
+        rewards = torch.cat(self.info_eval_vis["eval_rewards_img"])
+        negative_rewards = torch.cat(self.info_eval_vis["eval_negative_rewards_img"])
+        prompts = self.info_eval_vis["eval_prompts"]
+        
+        self.info_eval["eval_rewards"] = rewards.mean()
+        self.info_eval["eval_rewards_std"] = rewards.std()
+
+        self.accelerator.log(self.info_eval, step=self.global_step)
+
+        images  = []
+        for i, image in enumerate(ims):
+            prompt = prompts[i]
+            reward = rewards[i]
+            
+            negative_image = negative_ims[i]
+            negative_reward = negative_rewards[i]
+                
+            if image.min() < 0: # normalize unnormalized images
+                image = (image.clone().detach() / 2 + 0.5).clamp(0, 1)
+                
+            if negative_image.min() < 0: # normalize unnormalized images
+                negative_image = (negative_image.clone().detach() / 2 + 0.5).clamp(0, 1)
+
+            pil = Image.fromarray((image.cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+            pil_negative = Image.fromarray((negative_image.cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+            if self.config.reward_fn == "inpaint":
+                if epoch is not None and inner_epoch is not None:
+                    caption = f"{epoch:03d}_{inner_epoch:03d}_{self.config.inpaint.sample_name:.25} | {reward:.2f}"
+                else:
+                    caption = f"{self.config.inpaint.sample_name:.25} | {reward:.2f}"
+                pil_target = Image.fromarray((self.masked_target[0].numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+                pil_target.save(f"{self.log_dir}/masked {self.config.inpaint.sample_name}_{self.config.inpaint.x}_{self.config.inpaint.x+self.config.inpaint.width}_{self.config.inpaint.y}_{self.config.inpaint.y+self.config.inpaint.height}.png")
+            else: 
+                if epoch is not None and inner_epoch is not None:
+                    caption = f"{epoch:03d}_{inner_epoch:03d}_{i:03d}_{prompt} | reward: {reward}"
+                    negative_caption = f"{epoch:03d}_{inner_epoch:03d}_{i:03d}_{prompt} | reward: {negative_reward}"
+                else:
+                    caption = f"{i:03d}_{prompt} | reward: {reward}"
+                    negative_caption = f"{i:03d}_{prompt} | reward: {negative_reward}"
+            pil.save(f"{self.log_dir}/{caption}.png")
+            pil_negative.save(f"{self.negative_log_dir}/{negative_caption}.png")
+
+            pil = pil.resize((256, 256))
+            if self.config.reward_fn == "inpaint":
+                caption = f"{self.config.inpaint.sample_name:.25} | {reward:.2f}"
+            else: 
+                caption = f"{prompt:.25} | {reward:.2f}"
+            images.append(wandb.Image(pil, caption=caption)) 
+
+        self.accelerator.log({"eval_images": images},step=self.global_step)
+
+        # Log additional details if needed
+        self.logger.info(f"Logged Evaluation results for step {self.global_step}")
 
         rewards = torch.cat(self.info_eval_vis["eval_rewards_img"])
         prompts = self.info_eval_vis["eval_prompts"]

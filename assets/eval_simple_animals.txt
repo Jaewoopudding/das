@@ -1,10 +1,1 @@
-snail
-hippopotamus
-cheetah
-crocodile
-lobster
-octopus
-bat
-gorilla
-hedgehog
-kangaroo
+butterfly

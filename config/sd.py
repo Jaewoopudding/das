@@ -17,20 +17,20 @@ def smc():
     config.smc.tempering_gamma = 0.008
     config.smc.tempering_start = 0
 
-    config.smc.verbose = True
+    config.smc.verbose = False
 
     config.sample.num_steps = 100
     config.sample.eta = 1.
 
-    config.sample.batch_size = 2
-    config.max_vis_images = 2
+    config.sample.batch_size = 1
+    config.max_vis_images = 256
 
     return config
 
 def aesthetic():
     config = smc()
     config.reward_fn = "aesthetic"
-    config.prompt_fn = "eval_simple_animals"
+    config.prompt_fn = "simple_animals"
 
     config.smc.kl_coeff = 0.005
 
